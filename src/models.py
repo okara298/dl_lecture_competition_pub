@@ -61,7 +61,7 @@ class ConvBlock(nn.Module):
         # 畳み込み層を定義
         self.conv0 = nn.Conv1d(in_dim, out_dim, kernel_size, padding="same")
         self.conv1 = nn.Conv1d(out_dim, out_dim, kernel_size, padding="same")
-        self.conv2 = nn.Conv1d(out_dim, out_dim, kernel_size), padding="same")
+        self.conv2 = nn.Conv1d(out_dim, out_dim, kernel_size, padding="same")
 
         # バッチ正則化層を定義
         self.batchnorm0 = nn.BatchNorm1d(num_features=out_dim)
