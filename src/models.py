@@ -17,12 +17,13 @@ class BasicConvClassifier(nn.Module):
         self.blocks = nn.Sequential(
             ConvBlock(in_channels, hid_dim),
             ConvBlock(hid_dim, hid_dim),
+            ConvBlock(hid_dim, hid_dim * 2),  ##### 追加の畳み込みブロック
         )
 
         self.head = nn.Sequential(
             nn.AdaptiveAvgPool1d(1),
             Rearrange("b d 1 -> b d"),
-            nn.Linear(hid_dim, num_classes),
+            nn.Linear(hid_dim * 2, num_classes),  ##### 隠れ層の次元を変更
         )
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
