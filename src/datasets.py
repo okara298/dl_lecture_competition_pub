@@ -10,7 +10,13 @@ def scale_eeg(data):
     data_scaled = scaler.fit_transform(data.T).T
     return data_scaled
 
+def baseline_correction(data):
+    baseline = np.mean(data[:, :100], axis=1, keepdims=True)  # 最初の100サンプルをベースラインとして使用
+    data_corrected = data - baseline
+    return data_corrected
+
 def preprocess_eeg(data):
+    data = baseline_correction(data)
     data = scale_eeg(data)
     return data
 
@@ -22,8 +28,7 @@ class ThingsMEGDataset(torch.utils.data.Dataset):
         self.split = split
         self.data_dir = data_dir
         self.num_classes = 1854
-        self.subject_idxs = glob(os.path.join(data_dir, f"{split}_subject_idxs", "*.npy"))
-        self.num_samples = len(self.subject_idxs)
+        self.num_samples = len(glob(os.path.join(data_dir, f"{split}_X", "*.npy")))
 
     def __len__(self) -> int:
         return self.num_samples
@@ -34,8 +39,8 @@ class ThingsMEGDataset(torch.utils.data.Dataset):
         X = preprocess_eeg(X)
         X = torch.from_numpy(X).float()  # Ensure the data type is float32
         
-        subject_idx_path = self.subject_idxs[i]
-        subject_idx = torch.from_numpy(np.load(subject_idx_path))
+        subject_idx_path = os.path.join(self.data_dir, f"{self.split}_subject_idxs", str(i).zfill(5) + ".npy")
+        subject_idx = torch.from_numpy(np.load(subject_idx_path)).long()
         
         if self.split in ["train", "val"]:
             y_path = os.path.join(self.data_dir, f"{self.split}_y", str(i).zfill(5) + ".npy")
