@@ -1,10 +1,18 @@
 import os
 import numpy as np
 import torch
+from sklearn.preprocessing import StandardScaler
 from typing import Tuple
-from termcolor import cprint
 from glob import glob
 
+def scale_eeg(data):
+    scaler = StandardScaler()
+    data_scaled = scaler.fit_transform(data.T).T
+    return data_scaled
+
+def preprocess_eeg(data):
+    data = scale_eeg(data)
+    return data
 
 class ThingsMEGDataset(torch.utils.data.Dataset):
     def __init__(self, split: str, data_dir: str = "data") -> None:
@@ -14,16 +22,19 @@ class ThingsMEGDataset(torch.utils.data.Dataset):
         self.split = split
         self.data_dir = data_dir
         self.num_classes = 1854
-        self.num_samples = len(glob(os.path.join(data_dir, f"{split}_X", "*.npy")))
+        self.subject_idxs = glob(os.path.join(data_dir, f"{split}_subject_idxs", "*.npy"))
+        self.num_samples = len(self.subject_idxs)
 
     def __len__(self) -> int:
         return self.num_samples
 
     def __getitem__(self, i):
         X_path = os.path.join(self.data_dir, f"{self.split}_X", str(i).zfill(5) + ".npy")
-        X = torch.from_numpy(np.load(X_path))
+        X = np.load(X_path)
+        X = preprocess_eeg(X)
+        X = torch.from_numpy(X).float()  # Ensure the data type is float32
         
-        subject_idx_path = os.path.join(self.data_dir, f"{self.split}_subject_idxs", str(i).zfill(5) + ".npy")
+        subject_idx_path = self.subject_idxs[i]
         subject_idx = torch.from_numpy(np.load(subject_idx_path))
         
         if self.split in ["train", "val"]:
