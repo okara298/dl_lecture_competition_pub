@@ -37,18 +37,16 @@ def run(args: DictConfig):
     )
 
     # ------------------
-    #       Model　　　　　　　　　　被験者番号 num_subjectsの追加
+    #       Model
     # ------------------
     model = BasicConvClassifier(
-        train_set.num_classes, train_set.seq_len, train_set.num_channels, num_subjects=4
+        train_set.num_classes, train_set.seq_len, train_set.num_channels
     ).to(args.device)
 
     # ------------------
     #     Optimizer
     # ------------------
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    ##### 学習率スケジューラの追加 #####
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3, factor=0.5)
 
     # ------------------
     #   Start training
@@ -57,7 +55,6 @@ def run(args: DictConfig):
     accuracy = Accuracy(
         task="multiclass", num_classes=train_set.num_classes, top_k=10
     ).to(args.device)
-
       
     for epoch in range(args.epochs):
         print(f"Epoch {epoch+1}/{args.epochs}")
@@ -66,9 +63,9 @@ def run(args: DictConfig):
         
         model.train()
         for X, y, subject_idxs in tqdm(train_loader, desc="Train"):
-            X, y, subject_idxs = X.to(args.device), y.to(args.device), subject_idxs.to(args.device)  # 被験者番号の追加
+            X, y = X.to(args.device), y.to(args.device)
 
-            y_pred = model(X, subject_idxs)  # 被験者番号の追加
+            y_pred = model(X)
             
             loss = F.cross_entropy(y_pred, y)
             train_loss.append(loss.item())
@@ -82,10 +79,10 @@ def run(args: DictConfig):
 
         model.eval()
         for X, y, subject_idxs in tqdm(val_loader, desc="Validation"):
-            X, y, subject_idxs = X.to(args.device), y.to(args.device), subject_idxs.to(args.device)  # 被験者番号の追加
+            X, y = X.to(args.device), y.to(args.device)
             
             with torch.no_grad():
-                y_pred = model(X, subject_idxs)  # 被験者番号の追加
+                y_pred = model(X)
             
             val_loss.append(F.cross_entropy(y_pred, y).item())
             val_acc.append(accuracy(y_pred, y).item())
@@ -99,9 +96,6 @@ def run(args: DictConfig):
             cprint("New best.", "cyan")
             torch.save(model.state_dict(), os.path.join(logdir, "model_best.pt"))
             max_val_acc = np.mean(val_acc)
-
-        ##### バリデーションの後に学習率スケジューラをステップさせる #####
-        scheduler.step(np.mean(val_loss))
             
     
     # ----------------------------------
@@ -112,7 +106,7 @@ def run(args: DictConfig):
     preds = [] 
     model.eval()
     for X, subject_idxs in tqdm(test_loader, desc="Validation"):        
-        preds.append(model(X.to(args.device), subject_idxs.to(args.device)).detach().cpu())  # 被験者番号の追加
+        preds.append(model(X.to(args.device)).detach().cpu())
         
     preds = torch.cat(preds, dim=0).numpy()
     np.save(os.path.join(logdir, "submission"), preds)
