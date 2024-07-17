@@ -115,3 +115,8 @@ def run(args: DictConfig):
 
 if __name__ == "__main__":
     run()
+    cprint(f"Submission {preds.shape} saved at {logdir}", "cyan")
+
+
+if __name__ == "__main__":
+    run()
