@@ -10,13 +10,16 @@ class BasicConvClassifier(nn.Module):
         num_classes: int,
         seq_len: int,
         in_channels: int,
-        hid_dim: int = 128
+        hid_dim: int = 128,
+        dropout_prob: float = 0.5  # ドロップアウトの確率
     ) -> None:
         super().__init__()
 
         self.blocks = nn.Sequential(
             ConvBlock(in_channels, hid_dim),
+            nn.Dropout(dropout_prob),  # ドロップアウトの追加
             ConvBlock(hid_dim, hid_dim),
+            nn.Dropout(dropout_prob)   # ドロップアウトの追加
         )
 
         self.head = nn.Sequential(
